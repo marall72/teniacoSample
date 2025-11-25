@@ -5,10 +5,15 @@
 
 <div class="text-center mb-5">
     <h1 class="display-4">Welcome to Dog Breeds</h1>
-    <p>Explore all dog breeds from <a href="https://dog.ceo/api/breeds/list/all" target="_blank">Dog CEO API</a></p>
+    <p>
+        Explore all dog breeds from
+        <a href="https://dog.ceo/api/breeds/list/all" target="_blank" class="text-blue-600 underline">
+            Dog CEO API
+        </a>
+    </p>
 </div>
 
-@if (Model?.Message == null || !Model.Message.Any())
+@if (Model?.Breeds == null || !Model.Breeds.Any())
 {
     <div class="alert alert-warning text-center" role="alert">
         No dog breeds found.
@@ -18,24 +23,36 @@ else
 {
     <div class="container mx-auto px-4">
         <div class="row">
-            @foreach (var breed in Model.Message)
+            @foreach (var breed in Model.Breeds)
             {
-                <div class="col-sm-6 col-md-4 col-lg-3 mb-4">
-                    <div class="card shadow-sm rounded-lg hover:shadow-lg transition duration-300">
-                        <div class="card-body p-3">
-                            <h5 class="card-title text-center font-bold text-lg">@breed.Key</h5>
-                            @if (breed.Value.Count > 0)
+                <div class="col-sm-6 col-md-4 col-lg-3 mb-4 flex">
+                    <div class="card shadow rounded-xl hover:shadow-2xl transition duration-300 w-full">
+
+                        <!-- تصویر -->
+                        <img src="@breed.Picture"
+                             class="card-img-top w-full h-48 object-cover rounded-t-xl"
+                             alt="@breed.Name">
+
+                        <div class="card-body p-4">
+
+                            <h5 class="card-title text-center font-bold text-lg mb-3">
+                                @breed.Name
+                            </h5>
+
+                            @if (breed.SubBreeds.Count > 0)
                             {
-                                <ul class="list-group list-group-flush mt-2">
-                                    @foreach (var sub in breed.Value)
+                                <ul class="list-group list-group-flush">
+                                    @foreach (var sub in breed.SubBreeds)
                                     {
-                                        <li class="list-group-item text-sm text-gray-600">@sub</li>
+                                        <li class="list-group-item text-sm text-gray-600">
+                                            @sub
+                                        </li>
                                     }
                                 </ul>
                             }
                             else
                             {
-                                <p class="text-center text-gray-500 mt-2">No sub-breeds</p>
+                                <p class="text-center text-gray-500 text-sm">No sub-breeds</p>
                             }
                         </div>
                     </div>

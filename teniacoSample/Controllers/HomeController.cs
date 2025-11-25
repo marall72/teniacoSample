@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Text.Json;
 using teniacoSample.Models;
 
@@ -23,17 +25,44 @@ namespace teniacoSample.Controllers
 
             try
             {
-                var response = await httpClient.GetStringAsync(url);
+                var rawResponse = await httpClient.GetStringAsync(url);
 
-                var data = JsonSerializer.Deserialize<DogBreedsResponse>(response);
+                var raw = JsonSerializer.Deserialize<RawDogApiResponse>(rawResponse);
 
-                return View(data);
+                var response = new DogBreedsResponse
+                {
+                    Status = raw.Status,
+                    Breeds = raw.Message.Select(kvp => new Breed
+                    {
+                        Name = kvp.Key,
+                        SubBreeds = kvp.Value
+                    }).ToList()
+                };
+
+                for(int i = 0; i < response.Breeds.Count; i++)
+                {
+                    var breed = response.Breeds[i];
+                    breed.Picture = await GetBreedRandomPicUrl(breed.Name);
+                }
+
+                return View(response);
             }
             catch (Exception ex)
             {
                 ViewBag.Error = ex.Message;
                 return View(null);
             }
+        }
+
+        private async Task<string> GetBreedRandomPicUrl(string breedName)
+        {
+            //naffenpinscher
+            var picsUrl = $"https://dog.ceo/api/breed/{breedName}/images/random";
+            var httpClient = _httpClientFactory.CreateClient();
+            var rawResponse = await httpClient.GetStringAsync(picsUrl);
+
+            var image = JsonSerializer.Deserialize<DogImageResponse>(rawResponse);
+            return image.ImageUrl;
         }
 
         public IActionResult Privacy()
