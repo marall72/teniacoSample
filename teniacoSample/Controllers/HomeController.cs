@@ -1,5 +1,6 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
+using System.Text.Json;
 using teniacoSample.Models;
 
 namespace teniacoSample.Controllers
@@ -7,15 +8,32 @@ namespace teniacoSample.Controllers
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly IHttpClientFactory _httpClientFactory;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, IHttpClientFactory httpClientFactory)
         {
             _logger = logger;
+            _httpClientFactory = httpClientFactory;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var httpClient = _httpClientFactory.CreateClient();
+            string url = "https://dog.ceo/api/breeds/list/all";
+
+            try
+            {
+                var response = await httpClient.GetStringAsync(url);
+
+                var data = JsonSerializer.Deserialize<DogBreedsResponse>(response);
+
+                return View(data);
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = ex.Message;
+                return View(null);
+            }
         }
 
         public IActionResult Privacy()
