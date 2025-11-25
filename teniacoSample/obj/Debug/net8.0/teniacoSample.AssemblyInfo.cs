@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("teniacoSample")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+37377bc3c61f211f56d5da8ec85a3bc6cd940e94")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+abed3e0128132c57852583d83f1d677cf597e769")]
 [assembly: System.Reflection.AssemblyProductAttribute("teniacoSample")]
 [assembly: System.Reflection.AssemblyTitleAttribute("teniacoSample")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

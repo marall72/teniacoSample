@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using System;
+using Microsoft.Extensions.Caching.Memory;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Text.Json;
 using teniacoSample.Models;
 
@@ -11,41 +10,64 @@ namespace teniacoSample.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly IMemoryCache _cache;
 
-        public HomeController(ILogger<HomeController> logger, IHttpClientFactory httpClientFactory)
+        public HomeController(ILogger<HomeController> logger, IHttpClientFactory httpClientFactory, IMemoryCache cache)
         {
             _logger = logger;
             _httpClientFactory = httpClientFactory;
+            _cache = cache;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(int page = 1)
         {
-            var httpClient = _httpClientFactory.CreateClient();
-            string url = "https://dog.ceo/api/breeds/list/all";
+            string cacheKey = "AllBreedsWithImages";
+            int pageSize = 20;
 
             try
             {
-                var rawResponse = await httpClient.GetStringAsync(url);
-
-                var raw = JsonSerializer.Deserialize<RawDogApiResponse>(rawResponse);
-
-                var response = new DogBreedsResponse
+                if (!_cache.TryGetValue(cacheKey, out List<Breed> allBreeds))
                 {
-                    Status = raw.Status,
-                    Breeds = raw.Message.Select(kvp => new Breed
+                    var httpClient = _httpClientFactory.CreateClient();
+                    string url = "https://dog.ceo/api/breeds/list/all";
+
+                    var rawResponse = await httpClient.GetStringAsync(url);
+                    var raw = JsonSerializer.Deserialize<RawDogApiResponse>(rawResponse);
+
+                    allBreeds = raw.Message.Select(kvp => new Breed
                     {
                         Name = kvp.Key,
-                        SubBreeds = kvp.Value
-                    }).ToList()
-                };
+                        SubBreeds = kvp.Value,
+                        Picture = null
+                    }).ToList();
 
-                for(int i = 0; i < response.Breeds.Count; i++)
-                {
-                    var breed = response.Breeds[i];
-                    breed.Picture = await GetBreedRandomPicUrl(breed.Name);
+                    var sw = Stopwatch.StartNew();
+
+                    await Parallel.ForEachAsync(allBreeds, async (breed, ct) =>
+                    {
+                        breed.Picture = await GetBreedRandomPicUrl(breed.Name);
+                    });
+
+                    sw.Stop();
+                    var elapsedMs = sw.ElapsedMilliseconds;
+                    var elapsedSec = sw.Elapsed.TotalSeconds;
+
+                    _cache.Set(cacheKey, allBreeds, TimeSpan.FromHours(1));
                 }
 
-                return View(response);
+                var pagedBreeds = allBreeds
+                                    .Skip((page - 1) * pageSize)
+                                    .Take(pageSize)
+                                    .ToList();
+
+                var model = new DogBreedsResponse
+                {
+                    Breeds = pagedBreeds,
+                    PageNumber = page,
+                    TotalPages = (int)Math.Ceiling(allBreeds.Count / (double)pageSize)
+                };
+
+                return View(model);
             }
             catch (Exception ex)
             {
@@ -56,7 +78,6 @@ namespace teniacoSample.Controllers
 
         private async Task<string> GetBreedRandomPicUrl(string breedName)
         {
-            //naffenpinscher
             var picsUrl = $"https://dog.ceo/api/breed/{breedName}/images/random";
             var httpClient = _httpClientFactory.CreateClient();
             var rawResponse = await httpClient.GetStringAsync(picsUrl);
